@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: my-app
+          image: snegzok/my-app:latest # <- здесь укажи свой образ
+          resources:
+            requests:
+              memory: "64Mi"   # Минимум 64 Мегабайта
+              cpu: "100m"      # Минимум 0.1 ядра (100 милли-ядер)
+            limits:
+              memory: "128Mi"  # Максимум 128 Мегабайт
+              cpu: "500m"      # Максимум 0.5 ядра
+          envFrom:
+            - configMapRef:
+                name: my-app-config
+            - secretRef:          # --- ДОБАВЬ ЭТО ---
+                name: my-app-secret
+          ports:
+            - containerPort: 8080
+ # --- ПРОВЕРКИ ---
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5

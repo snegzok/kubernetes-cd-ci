@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-app-config
+data:
+  APP_TITLE: "Мой первый конфиг в K8s! 🚀"
+  APP_COLOR: "green"
+  DEBUG_MODE: "True"

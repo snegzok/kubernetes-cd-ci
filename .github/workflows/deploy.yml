@@ -65,11 +65,9 @@ jobs:
       - name: Deploy to Cluster
         run: |
           # Меняем старую версию образа на новую прямо в манифесте
-          sed -i "s|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}|g" k8s/*.yml
-
+          sed -i "s|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}|g" k8s/**/*.yml
           # Применяем все файлы из папки k8s
-          kubectl apply -f k8s/ --insecure-skip-tls-verify          # Ждем, пока деплой успешно обновится
-          # (Убедись, что в твоем k8s/deployment.yml имя совпадает с 'my-app-deployment')
+          kubectl apply -f k8s/ -R --insecure-skip-tls-verify          # (Убедись, что в твоем k8s/deployment.yml имя совпадает с 'my-app-deployment')
           kubectl rollout status deployment/my-app-deployment --insecure-skip-tls-verify
   # ЭТАП 4: Уведомление в Telegram
   notify:
