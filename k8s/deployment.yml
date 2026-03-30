@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
       - name: my-app-container
-        # ВАЖНО: GitHub Actions сам заменит 'latest' на v1.0.X
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
+        # Теперь здесь обычный текст, который поймет команда 'sed' в GitHub Actions
+        image: snegzok/my-app:latest
         ports:
         - containerPort: 5000 # Порт, на котором работает твой app.py
         resources:
@@ -28,7 +28,7 @@ spec:
             cpu: "500m"
 
 ---
-# Сервис нужен, чтобы приложение было доступно внутри сети кластера
+# Сервис для доступа к приложению
 apiVersion: v1
 kind: Service
 metadata:
@@ -38,6 +38,6 @@ spec:
     app: my-app
   ports:
     - protocol: TCP
-      port: 80         # Порт сервиса
-      targetPort: 5000 # Порт приложения
-  type: ClusterIP      # Доступно только внутри кластера
+      port: 80
+      targetPort: 5000
+  type: ClusterIP
