@@ -5,31 +5,38 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # ЭТАП 1: Проверка кода (Lint)
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
+
       - name: Install linter
         run: pip install flake8
+
       - name: Run flake8
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
+  # ЭТАП 2: Сборка и отправка в Docker Hub
   build-and-push:
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -39,27 +46,51 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}
 
+  # ЭТАП 3: Деплой в Kubernetes (теперь по-настоящему!)
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      # Заглушка, чтобы не было ошибки. Позже заменим на kubectl apply.
-      - name: Deploying to Kubernetes
-        run: echo "Starting deployment of version v1.0.${{ github.run_number }}"
 
+      # Подключаемся к кластеру через секрет KUBE_CONFIG
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      # Подставляем новый тег образа и применяем манифесты
+      - name: Deploy to Cluster
+        run: |
+          # Меняем старую версию образа на новую прямо в манифесте
+          sed -i "s|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}|g" k8s/*.yml
+
+          # Применяем все файлы из папки k8s
+          kubectl apply -f k8s/
+          # Ждем, пока деплой успешно обновится
+          # (Убедись, что в твоем k8s/deployment.yml имя совпадает с 'my-app-deployment')
+          kubectl rollout status deployment/my-app-deployment
+
+  # ЭТАП 4: Уведомление в Telegram
   notify:
     runs-on: ubuntu-latest
     needs: [lint, build-and-push, deploy]
     if: always()
     steps:
-      - name: send telegram message
+      - name: Send Telegram Notification
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
           message: |
-            📢 Результат Lint: ${{ needs.lint.result }}
-            🚀 Деплой: ${{ needs.deploy.result }}
-            📁 Проект: ${{ github.repository }}
+            🚀 **CI/CD Pipeline Report**
+            -------------------------
+            ✅ **Lint**: ${{ needs.lint.result }}
+            📦 **Build**: ${{ needs.build-and-push.result }}
+            ☸️ **Deploy**: ${{ needs.deploy.result }}
+
+            👤 **Author**: ${{ github.actor }}
+            📝 **Commit**: ${{ github.event.head_commit.message }}
+            🔗 [View Workflow](https://github.com{{ github.repository }}/actions)
