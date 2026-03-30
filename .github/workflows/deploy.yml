@@ -1,0 +1,75 @@
+GNU nano 7.2                                                                                                  deploy.yml *
+name: Docker Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ] # Срабатывает при пуше в главную ветку
+
+jobs:
+  # ЭТАП 1: Проверка кода (Lint)
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install linter
+        run: pip install flake8
+
+      - name: Run flake8
+        # Проверяем критические ошибки синтаксиса
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  # ЭТАП 2: Сборка и отправка в Docker Hub
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: lint # Ждем успешного линтинга
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Пушим и latest, и версию с номером запуска
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}
+
+  # ЭТАП 3: Деплой в твой Kubernetes
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+
+  notify:
+    runs-on: ubuntu-latest
+    # Теперь мы ждем ЛЮБОЙ из этих этапов
+    needs: [lint, build-and-push, deploy]
+    # ЭТО ГЛАВНОЕ: выполнять всегда, даже если предыдущие шаги упали (failure)
+    if: always()
+    steps:
+      - name: send telegram message
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          # Бот сам напишет: "success", "failure" или "cancelled"
+          message: |
+            📢 Результат проверки: ${{ needs.lint.result }}
+            🚀 Сборка/Деплой: ${{ needs.deploy.result }}
+            📁 Проект: ${{ github.repository }}
+            📝 Коммит: ${{ github.event.head_commit.message }}
