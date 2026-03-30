@@ -1,4 +1,3 @@
-GNU nano 7.2                                                                                                  deploy.yml *
 name: Docker Build and Deploy
 
 on:
