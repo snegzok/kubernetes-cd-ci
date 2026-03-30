@@ -68,11 +68,9 @@ jobs:
           sed -i "s|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}|g" k8s/*.yml
 
           # Применяем все файлы из папки k8s
-          kubectl apply -f k8s/
-          # Ждем, пока деплой успешно обновится
+          kubectl apply -f k8s/ --insecure-skip-tls-verify          # Ждем, пока деплой успешно обновится
           # (Убедись, что в твоем k8s/deployment.yml имя совпадает с 'my-app-deployment')
-          kubectl rollout status deployment/my-app-deployment
-
+          kubectl rollout status deployment/my-app-deployment --insecure-skip-tls-verify
   # ЭТАП 4: Уведомление в Telegram
   notify:
     runs-on: ubuntu-latest
