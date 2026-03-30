@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Имя твоего приложения в кластере
+  name: my-app-deployment
+  labels:
+    app: my-app
+spec:
+  # Сколько копий (подов) запустить одновременно
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        # ВАЖНО: GitHub Actions сам заменит 'latest' на v1.0.X
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
+        ports:
+        - containerPort: 5000 # Порт, на котором работает твой app.py
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+
+---
+# Сервис нужен, чтобы приложение было доступно внутри сети кластера
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80         # Порт сервиса
+      targetPort: 5000 # Порт приложения
+  type: ClusterIP      # Доступно только внутри кластера
