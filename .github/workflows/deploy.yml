@@ -68,7 +68,9 @@ jobs:
           helm upgrade --install my-app ./charts \
             --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/my-app \
             --set image.tag=v1.0.${{ github.run_number }} \
+            --kube-insecure-skip-tls-verify \
             --wait --timeout 5m
+
   notify:
     runs-on: ubuntu-latest
     needs: [lint, build-and-push, deploy]
