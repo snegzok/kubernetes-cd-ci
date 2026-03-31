@@ -26,9 +26,9 @@ spec:
               cpu: "500m"      # Максимум 0.5 ядра
           envFrom:
             - configMapRef:
-                name: my-app-config
-            - secretRef:          # --- ДОБАВЬ ЭТО ---
-                name: my-app-secret
+                name: {{ .Release.Name }}-config
+        #    - secretRef:          # --- ДОБАВЬ ЭТО ---
+         #       name: {{ .Release.Name }}-secret
           ports:
             - containerPort: 8080
  # --- ПРОВЕРКИ ---
