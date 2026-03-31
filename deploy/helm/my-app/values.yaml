@@ -4,7 +4,7 @@ replicaCount: 2
 # 2. Настройки образа (Deployment.yaml)
 image:
   repository: snegzok/my-app
-  tag: latest # GitHub Actions заменит это через --set image.tag=v1.0.${{ github.run_number }}
+  tag: v1.0.22
   pullPolicy: IfNotPresent
 
 # 3. Настройки сети (Service.yaml)
