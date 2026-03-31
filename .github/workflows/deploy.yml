@@ -55,29 +55,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Подключаемся к кластеру через секрет KUBE_CONFIG
+      # 1. Экшен сам настроит доступ, файл создавать не нужно
       - name: Set Kubernetes Context
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
-      # Устанавливаем Helm (на всякий случай, если его нет в образе runner)
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-
-      # Деплоим чарт
+      # 2. Helm сразу будет работать, так как контекст уже установлен
       - name: Deploy with Helm
         run: |
-          # Указываем Helm использовать наш временный файл
-          export KUBECONFIG=./kubeconfig.yaml
-
-          # Пытаемся обновить приложение. 
-          # Замени './charts' на путь к папке, где лежит твой Chart.yaml
           helm upgrade --install my-app ./charts \
             --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/my-app \
             --set image.tag=v1.0.${{ github.run_number }} \
-            --wait --timeout 5m  # ЭТАП 4: Уведомление в Telegram
+            --wait --timeout 5m
   notify:
     runs-on: ubuntu-latest
     needs: [lint, build-and-push, deploy]
