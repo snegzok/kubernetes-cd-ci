@@ -67,11 +67,10 @@ jobs:
         uses: azure/setup-helm@v3
 
       # Деплоим чарт
-      - name: Deploy
+      - name: Debug kubeconfig
         run: |
-          echo ${{ secrets.KUBE_CONFIG }} | base64 -d > kubeconfig.yaml
-          helm upgrade --install my-app ./deploy/helm/my-app --kubeconfig kubeconfig.yaml --set image.tag=v1.0.${{ github.run_number }} --insecure-skip-tls-verify
-
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d | head -5
+    # Should start with: apiVersion: v1
   # ЭТАП 4: Уведомление в Telegram
   notify:
     runs-on: ubuntu-latest
