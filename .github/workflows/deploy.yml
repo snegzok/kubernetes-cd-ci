@@ -65,7 +65,7 @@ jobs:
       # 2. Helm сразу будет работать, так как контекст уже установлен
       - name: Deploy with Helm
         run: |
-          helm upgrade --install my-app ./charts \
+          helm upgrade --install my-app ./deploy/helm/my-app \
             --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/my-app \
             --set image.tag=v1.0.${{ github.run_number }} \
             --kube-insecure-skip-tls-verify \
