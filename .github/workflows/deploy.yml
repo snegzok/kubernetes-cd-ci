@@ -69,17 +69,15 @@ jobs:
       # Деплоим чарт
       - name: Deploy with Helm
         run: |
-          # Создаем временный файл конфига из секрета
-          echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
+          # Указываем Helm использовать наш временный файл
+          export KUBECONFIG=./kubeconfig.yaml
 
-          # Запускаем Helm, явно указывая этот файл
-          helm upgrade --install my-app ./deploy/helm/my-app \
+          # Пытаемся обновить приложение. 
+          # Замени './charts' на путь к папке, где лежит твой Chart.yaml
+          helm upgrade --install my-app ./charts \
+            --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/my-app \
             --set image.tag=v1.0.${{ github.run_number }} \
-            --kubeconfig kubeconfig.yaml \
-            --namespace default \
-            --wait \
-            --insecure-skip-tls-verify
-  # ЭТАП 4: Уведомление в Telegram
+            --wait --timeout 5m  # ЭТАП 4: Уведомление в Telegram
   notify:
     runs-on: ubuntu-latest
     needs: [lint, build-and-push, deploy]
