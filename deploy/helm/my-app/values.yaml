@@ -1,0 +1,48 @@
+# 1. Основные настройки приложения
+replicaCount: 2
+
+# 2. Настройки образа (Deployment.yaml)
+image:
+  repository: snegzok/my-app
+  tag: latest # GitHub Actions заменит это через --set image.tag=v1.0.${{ github.run_number }}
+  pullPolicy: IfNotPresent
+
+# 3. Настройки сети (Service.yaml)
+service:
+  type: ClusterIP
+  port: 80         # Внешний порт сервиса
+  targetPort: 8080 # Порт внутри твоего приложения
+
+# 4. Настройки доступа извне (Ingress.yaml)
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    host: kuber.expert-only.ru
+  tls:
+    secretName: kuber-tls
+
+# 5. Настройки конфигурации (ConfigMap.yaml)
+config:
+  title: "Мой первый конфиг в K8s! 🚀"
+  color: "green"
+  debug: "True"
+
+# 6. Настройки автоскалирования (HPA.yaml)
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  cpuTarget: 50 # Порог 50% CPU для создания новых подов
+
+# 7. Лимиты ресурсов (Deployment.yaml)
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

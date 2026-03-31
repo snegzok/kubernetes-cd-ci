@@ -47,6 +47,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}
 
   # ЭТАП 3: Деплой в Kubernetes (теперь по-настоящему!)
+  # ЭТАП 3: Деплой в Kubernetes (через Helm)
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
@@ -61,14 +62,21 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
-      # Подставляем новый тег образа и применяем манифесты
-      - name: Deploy to Cluster
+      # Устанавливаем Helm (на всякий случай, если его нет в образе runner)
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+
+      # Деплоим чарт
+      - name: Deploy with Helm
         run: |
-          # Меняем старую версию образа на новую прямо в манифесте
-          find k8s/ -name "*.yml" -exec sed -i "s|image:.*snegzok/my-app:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:v1.0.${{ github.run_number }}|g" {} +
-          # Применяем все файлы из папки k8s
-          kubectl apply -f k8s/ -R --insecure-skip-tls-verify          # (Убедись, что в твоем k8s/deployment.yml имя совпадает с 'my-app-deployment')
-          kubectl rollout status deployment/my-app --insecure-skip-tls-verify
+          # Мы указываем имя релиза (my-app), путь к папке в проекте 
+          # и через --set передаем новый тег образа прямо в шаблон
+          helm upgrade --install my-app ./deploy/helm/my-app \
+            --set image.tag=v1.0.${{ github.run_number }} \
+            --namespace default \
+            --wait \
+            --insecure-skip-tls-verify
+
   # ЭТАП 4: Уведомление в Telegram
   notify:
     runs-on: ubuntu-latest

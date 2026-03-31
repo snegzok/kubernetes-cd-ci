@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # Используем имя релиза, чтобы избежать конфликтов
+  name: {{ .Release.Name }}-ingress
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # Берем аннотации из values.yaml
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.hosts.host }}
+    secretName: {{ .Values.ingress.tls.secretName }}
+  rules:
+  - host: {{ .Values.ingress.hosts.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            # Имя сервиса должно СОВПАДАТЬ с тем, что в service.yaml
+            name: {{ .Release.Name }}-service
+            port:
+              # Берем внешний порт сервиса из values
+              number: {{ .Values.service.port }}
