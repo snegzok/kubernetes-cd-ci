@@ -1,0 +1,25 @@
+# 1. Новое имя образа
+image:
+  repository: nginx
+  tag: stable
+  pullPolicy: IfNotPresent
+
+# 2. Одна копия для теста
+replicaCount: 1
+
+# 3. Порт Nginx (80 вместо 8080)
+service:
+  targetPort: 80
+
+# 4. Новый адрес (чтобы не было конфликта с основным сайтом)
+ingress:
+  host: test-nginx.expert-only.ru
+
+# 5. Лимиты (можно оставить как в my-app или уменьшить)
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
