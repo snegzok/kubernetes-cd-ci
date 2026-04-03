@@ -4,7 +4,7 @@ replicaCount: 2
 # 2. Настройки образа (Deployment.yaml)
 image:
   repository: snegzok/my-app
-  tag: v1.0.30
+  tag: v1.0.31
   pullPolicy: IfNotPresent
 
 # 3. Настройки сети (Service.yaml)
