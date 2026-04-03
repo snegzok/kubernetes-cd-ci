@@ -33,7 +33,7 @@ spec:
         prometheus-node-exporter:
           enabled: true # Это нужно, чтобы видеть нагрузку на сервер (CPU/RAM)
   destination:
-    server: https://default.svc
+    server: https://kubernetes.default.svc
     namespace: monitoring
   syncPolicy:
     automated:
