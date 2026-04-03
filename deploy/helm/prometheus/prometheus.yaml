@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.io
+    targetRevision: 69.7.1  # Актуальная версия на апрель 2026
+    chart: kube-prometheus-stack
+    helm:
+      values: |
+        # Мы НЕ ставим еще одну Графану, у нас уже есть своя из библиотеки!
+        grafana:
+          enabled: false
+
+        prometheus:
+          prometheusSpec:
+            retention: 6h # Храним метрики только 6 часов для экономии места
+            storageSpec:
+              emptyDir:
+                medium: Memory # Храним базу в оперативной памяти (быстро и без прав доступа)
+            resources:
+              requests:
+                memory: 400Mi
+              limits:
+                memory: 800Mi
+
+        # Отключаем тяжелые компоненты для экономии ресурсов
+        alertmanager:
+          enabled: false
+        prometheus-node-exporter:
+          enabled: true # Это нужно, чтобы видеть нагрузку на сервер (CPU/RAM)
+  destination:
+    server: https://default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
