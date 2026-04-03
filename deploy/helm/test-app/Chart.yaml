@@ -8,5 +8,5 @@ icon: https://githubusercontent.com
 
 dependencies:
   - name: mylib
-    version: "0.1.1"
+    version: "0.1.2"
     repository: "oci://ghcr.io/snegzok/charts"
