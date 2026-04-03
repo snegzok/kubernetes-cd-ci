@@ -1,13 +1,13 @@
-# 1. Образ
+# 1. Образ (используем безопасную версию nginx)
 image:
-  repository: nginx
+  repository: nginxinc/nginx-unprivileged
   tag: stable
   pullPolicy: IfNotPresent
 
 # 2. Копии
 replicaCount: 1
 
-# 3. Порты (МЕНЯЕМ НА 8080)
+# 3. Порты (этот образ по умолчанию слушает 8080)
 service:
   targetPort: 8080
 
@@ -15,21 +15,15 @@ service:
 ingress:
   host: test-nginx.expert-only.ru
 
-# 5. Динамические диски для работы Nginx в ReadOnly режиме
+# 5. Динамические диски (минимум, необходимый для этого образа)
 persistence:
   volumes:
-    - name: nginx-cache
-    - name: nginx-run
-    - name: nginx-logs
+    - name: nginx-tmp
   mounts:
-    - name: nginx-cache
-      mountPath: /var/cache/nginx
-    - name: nginx-run
-      mountPath: /var/run
-    - name: nginx-logs
-      mountPath: /var/log/nginx
+    - name: nginx-tmp
+      mountPath: /tmp
 
-# 6. Лимиты
+# 6. Лимиты ресурсов
 resources:
   requests:
     cpu: 100m
@@ -38,7 +32,6 @@ resources:
     cpu: 500m
     memory: 256Mi
 
-# 7. Переменные окружения (Чтобы Nginx знал, что слушать 8080)
-env:
-  - name: NGINX_PORT
-    value: "8080"
+# 7. Защита (библиотека подставит это в securityContext)
+securityContext:
+  readOnlyRootFilesystem: true
