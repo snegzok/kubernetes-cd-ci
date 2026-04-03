@@ -1,0 +1,6 @@
+dependencies:
+- name: mylib
+  repository: oci://ghcr.io/snegzok/charts
+  version: 0.1.2
+digest: sha256:637822dcf683f2382a5e573c7b61ae9cb70670800ddd3fcd82ea229c6136fed1
+generated: "2026-04-03T18:03:12.744190763+03:00"
