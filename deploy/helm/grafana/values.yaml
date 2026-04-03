@@ -1,0 +1,51 @@
+# 1. Образ
+image:
+  repository: grafana/grafana
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# 2. Копии
+replicaCount: 1
+
+# 3. Порты (Grafana по умолчанию на 3000)
+service:
+  targetPort: 3000
+
+# 4. Сеть (Твой домен)
+ingress:
+  host: grafana.expert-only.ru
+
+# 5. Динамические диски (Grafana НУЖНО писать в эти папки)
+persistence:
+  volumes:
+    - name: grafana-storage
+      emptyDir: {}
+    - name: grafana-logs
+      emptyDir: {}
+  mounts:
+    - name: grafana-storage
+      mountPath: /var/lib/grafana
+    - name: grafana-logs
+      mountPath: /var/log/grafana
+
+# 6. Лимиты (Grafana тяжелее Nginx)
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# 7. Защита (Grafana работает от пользователя 472)
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsUser: 472
+  fsGroup: 472
+
+# 8. Переменные (чтобы не запрашивал БД, а работал на sqlite в /var/lib/grafana)
+env:
+  - name: GF_PATHS_DATA
+    value: /var/lib/grafana
+  - name: GF_PATHS_LOGS
+    value: /var/log/grafana
