@@ -12,8 +12,8 @@ service:
 replicaCount: 1
 
 # 3. Порты (этот образ по умолчанию слушает 8080)
-service:
-  targetPort: 8080
+#service:
+#  targetPort: 8080
 
 # 4. Сеть
 #ingress:
@@ -21,11 +21,15 @@ service:
 
 # 5. Динамические диски (минимум, необходимый для этого образа)
 persistence:
+  # 1. Список томов (ОПИСАНИЕ)
   volumes:
     - name: busibox-tmp
+      emptyDir: {}  # <--- ЭТО ДОЛЖНО БЫТЬ ЗДЕСЬ
+
+  # 2. Список точек монтирования (КУДА ПРИКЛЕИТЬ ВНУТРИ)
   mounts:
     - name: busibox-tmp
-      mountPath: /tmp
+      mountPath: /tmp/busybox # <--- А ЗДЕСЬ ТОЛЬКО ИМЯ И ПУТЬ
 
 # 6. Лимиты ресурсов
 resources:
