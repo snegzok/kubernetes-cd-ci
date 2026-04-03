@@ -7,9 +7,9 @@ image:
 # 2. Копии
 replicaCount: 1
 
-# 3. Порты
+# 3. Порты (МЕНЯЕМ НА 8080)
 service:
-  targetPort: 80
+  targetPort: 8080
 
 # 4. Сеть
 ingress:
@@ -29,7 +29,7 @@ persistence:
     - name: nginx-logs
       mountPath: /var/log/nginx
 
-# 6. Лимиты (оставляем один блок)
+# 6. Лимиты
 resources:
   requests:
     cpu: 100m
@@ -37,3 +37,8 @@ resources:
   limits:
     cpu: 500m
     memory: 256Mi
+
+# 7. Переменные окружения (Чтобы Nginx знал, что слушать 8080)
+env:
+  - name: NGINX_PORT
+    value: "8080"
