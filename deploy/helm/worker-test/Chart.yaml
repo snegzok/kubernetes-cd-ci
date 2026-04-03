@@ -1,5 +1,5 @@
 apiVersion: v2
-name: test=work        # Имя твоего нового приложения
+name: test-work        # Имя твоего нового приложения
 description: Тестовое приложение на базе библиотеки
 type: application
 version: 1.0.0
