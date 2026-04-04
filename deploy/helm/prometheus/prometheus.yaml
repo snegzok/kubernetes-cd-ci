@@ -7,20 +7,29 @@ spec:
   project: default
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
-    targetRevision: 69.7.1  # Актуальная версия на апрель 2026
+    targetRevision: 69.7.1
     chart: kube-prometheus-stack
     helm:
       values: |
-        # Мы НЕ ставим еще одну Графану, у нас уже есть своя из библиотеки!
         grafana:
           enabled: false
 
         alertmanager:
           enabled: true
+          
+          # ВАЖНО: Минимальные требования для создания Alertmanager
           alertmanagerSpec:
-            # 1. МОНТИРУЕМ СЕКРЕТ (который создал SealedSecret)
+            replicas: 1                    # ← ОБЯЗАТЕЛЬНО! Сколько подов запускать
+            version: v0.27.0               # ← ОБЯЗАТЕЛЬНО! Версия Alertmanager
             secrets:
               - alertmanager-tg-token
+            resources:                     # ← Рекомендуется
+              requests:
+                memory: 64Mi
+                cpu: 50m
+              limits:
+                memory: 128Mi
+                cpu: 100m
 
           config:
             global:
@@ -35,7 +44,7 @@ spec:
             - name: 'telegram'
               telegram_configs:
               - bot_token_file: '/etc/alertmanager/secrets/alertmanager-tg-token/token'
-                chat_id: 7002594285  # Замени на свой ID (число)
+                chat_id: 7002594285
                 send_resolved: true
                 parse_mode: 'HTML'
                 message: |
@@ -52,6 +61,9 @@ spec:
             storageSpec:
               emptyDir:
                 medium: Memory
+            replicas: 1                    # ← Добавьте и для Prometheus
+            version: v2.53.0
+
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -62,4 +74,3 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
-
