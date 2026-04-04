@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://prometheus-community.github.io/helm-charts
+    repoURL: https://github.io
     targetRevision: 69.7.1
     chart: kube-prometheus-stack
     helm:
@@ -16,12 +16,18 @@ spec:
 
         alertmanager:
           enabled: true
-          
           alertmanagerSpec:
             replicas: 1
-            version: v0.27.0
+            # Убедитесь, что секрет 'alertmanager-tg-token' создан в namespace: monitoring
             secrets:
               - alertmanager-tg-token
+            resources:
+              requests:
+                memory: 64Mi
+                cpu: 50m
+              limits:
+                memory: 128Mi
+                cpu: 100m
 
           config:
             global:
@@ -31,12 +37,18 @@ spec:
               group_wait: 30s
               group_interval: 5m
               repeat_interval: 12h
-              receiver: 'telegram'          # ← Должен совпадать с именем receiver
+              receiver: 'telegram'
+              # Отключаем дефолтные маршруты, чтобы не было конфликтов
+              routes:
+              - receiver: 'null'
+                matchers:
+                - alertname="Watchdog"
+
             receivers:
-            - name: 'telegram'              # ← Имя receiver'а
+            - name: 'telegram'
               telegram_configs:
               - bot_token_file: '/etc/alertmanager/secrets/alertmanager-tg-token/token'
-                chat_id: 7002594285         # ← ТОЛЬКО ЧИСЛО, без кавычек!
+                chat_id: 7002594285
                 send_resolved: true
                 parse_mode: 'HTML'
                 message: |
@@ -47,17 +59,19 @@ spec:
                   ⏳ Началось: {{ .StartsAt.Format "15:04:05" }}
                   {{ end }}
 
+            # ДОБАВЛЕНО: Ресивер "null" для исправления ошибки ReconciliationFailed
+            - name: 'null'
+
         prometheus:
           prometheusSpec:
-            replicas: 1
-            version: v2.53.0
             retention: 6h
             storageSpec:
               emptyDir:
                 medium: Memory
+            replicas: 1
 
   destination:
-    server: https://kubernetes.default.svc
+    server: https://default.svc
     namespace: monitoring
   syncPolicy:
     automated:
