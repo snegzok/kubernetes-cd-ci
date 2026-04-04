@@ -71,7 +71,7 @@ spec:
             replicas: 1
 
   destination:
-    server: https://default.svc
+    server: https://kubernetes.default.svc
     namespace: monitoring
   syncPolicy:
     automated:
