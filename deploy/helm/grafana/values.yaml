@@ -49,3 +49,6 @@ env:
     value: /var/lib/grafana
   - name: GF_PATHS_LOGS
     value: /var/log/grafana
+envFrom:
+  - secretRef:
+      name: proxy-credentials
