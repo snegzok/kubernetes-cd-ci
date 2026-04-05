@@ -8,5 +8,5 @@ icon: https://githubusercontent.com
 
 dependencies:
   - name: mylib
-    version: "0.1.3"    #версию свою , но она должна совпадать с гитхаб репо
+    version: "0.1.4"    #версию свою , но она должна совпадать с гитхаб репо
     repository: "oci://ghcr.io/snegzok/charts"
