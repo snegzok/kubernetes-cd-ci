@@ -1,0 +1,12 @@
+apiVersion: v2
+name: telegram        # Имя твоего нового приложения
+description: Тестовое приложение на базе библиотеки
+type: application
+version: 1.0.0
+appVersion: "1.21.0"
+icon: https://githubusercontent.com
+
+dependencies:
+  - name: mylib
+    version: "0.1.3"    #версию свою , но она должна совпадать с гитхаб репо 
+    repository: "oci://ghcr.io/snegzok/charts"

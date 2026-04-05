@@ -1,0 +1,3 @@
+{{ include "mylib.service" . }}
+---
+{{ include "mylib.ingress" . }}
