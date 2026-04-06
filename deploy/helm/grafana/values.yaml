@@ -17,51 +17,38 @@ ingress:
 
 # 5. Динамические диски (Grafana НУЖНО писать в эти папки)
 persistence:
-  enabled: true
-  type: pvc
-  size: 5Gi
-  accessModes:
-    - ReadWriteOnce
-  # storageClassName: "default" # Раскомментируйте, если нужен конкретный класс
+  volumes:
+    - name: grafana-storage
+      emptyDir: {}
+    - name: grafana-logs
+      emptyDir: {}
+  mounts:
+    - name: grafana-storage
+      mountPath: /var/lib/grafana
+    - name: grafana-logs
+      mountPath: /var/log/grafana
 
-# 4. Исправление прав доступа (Init-контейнер)
-# ЭТО РЕШАЕТ ОШИБКУ "is not writable"
-initChownData:
-  enabled: true
-
-# 5. Безопасность (Security Context)
-# Настройки для Пода (права на монтирование диска)
-securityContext:
-  runAsUser: 472
-  runAsGroup: 472
-  fsGroup: 472
-
-# Настройки для Контейнера (разрешаем запись в /var/lib/grafana)
-containerSecurityContext:
-  readOnlyRootFilesystem: false  # ИСПРАВЛЕНО: теперь Grafana сможет писать в БД
-  allowPrivilegeEscalation: false
-  runAsNonRoot: true
-  capabilities:
-    drop:
-      - ALL
-
-# 6. Ресурсы (Класс Guaranteed для продакшена)
+# 6. Лимиты (Grafana тяжелее Nginx)
 resources:
   requests:
-    cpu: 250m
-    memory: 750Mi
+    cpu: 100m
+    memory: 256Mi
   limits:
-    cpu: 250m
-    memory: 750Mi
+    cpu: 500m
+    memory: 512Mi
 
-# 7. Переменные окружения и Секреты
-envFrom:
-  - secretRef:
-      name: proxy-credentials
+# 7. Защита (Grafana работает от пользователя 472)
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsUser: 472
+  fsGroup: 472
 
-# Пути данных (оставляем дефолтными, чарт сам их свяжет с PVC)
+# 8. Переменные (чтобы не запрашивал БД, а работал на sqlite в /var/lib/grafana)
 env:
   - name: GF_PATHS_DATA
     value: /var/lib/grafana
   - name: GF_PATHS_LOGS
     value: /var/log/grafana
+envFrom:
+  - secretRef:
+      name: proxy-credentials
