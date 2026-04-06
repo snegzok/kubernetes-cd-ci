@@ -11,151 +11,107 @@ spec:
     targetRevision: 6.6.2
     helm:
       values: |
-        # ==========================================
-        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ
-        # ==========================================
         loki:
           deploymentMode: SimpleScalable
           auth_enabled: false
-          
-          # КОНФИГУРАЦИЯ LOKI (ОБЯЗАТЕЛЬНО КАК СТРОКА!)
-          config: |
-            # Схема хранения (обязательно!)
-            schema_config:
-              configs:
-                - from: "2024-01-01"
-                  store: tsdb
-                  object_store: s3
-                  schema: v13
-                  index:
-                    prefix: loki_index_
-                    period: 24h
-            
-            # Подключение к MinIO
-            storage_config:
-              s3:
-                endpoint: loki-minio.logging.svc:9000
-                access_key_id: loki
-                secret_access_key: supersecret
-                s3forcepathstyle: true
-                insecure: true
-            
-            # Настройки ingester
-            ingester:
-              chunk_idle_period: 15m
-              chunk_retain_period: 30s
-            
-            # Настройки querier
-            querier:
-              query_timeout: 60s
-            
-            # Лимиты
-            limits_config:
-              allow_structured_metadata: true
-              volume_enabled: true
-          
-          # Хранилище (бакеты для MinIO)
+
+          commonConfig:
+            replication_factor: 2
+
+          schemaConfig:
+            configs:
+              - from: "2024-01-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+
           storage:
             type: s3
             bucketNames:
               chunks: loki-chunks
               ruler: loki-ruler
               admin: loki-admin
-        
-        # ==========================================
-        # 2. КОМПОНЕНТЫ (реплики и ресурсы)
-        # ==========================================
-        # Компонент записи
-        write:
-          replicas: 2
-          resources:
-            requests:
-              memory: 512Mi
-              cpu: 200m
-            limits:
-              memory: 1Gi
-              cpu: 500m
-          affinity:
-            podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/component: write
-                  topologyKey: kubernetes.io/hostname
-        
-        # Компонент чтения
-        read:
-          replicas: 2
-          resources:
-            requests:
-              memory: 512Mi
-              cpu: 200m
-            limits:
-              memory: 1Gi
-              cpu: 500m
-          affinity:
-            podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/component: read
-                  topologyKey: kubernetes.io/hostname
-        
-        # Компонент бэкенд (compactor, index gateway)
-        backend:
-          replicas: 1
-          resources:
-            requests:
-              memory: 512Mi
-              cpu: 200m
-            limits:
-              memory: 1Gi
-              cpu: 500m
-        
-        # ==========================================
-        # 3. MINIO (встроенное хранилище)
-        # ==========================================
+            s3:
+              endpoint: http://loki-minio.logging.svc.cluster.local:9000
+              accessKeyId: loki
+              secretAccessKey: supersecret
+              s3ForcePathStyle: true
+              insecure: true
+
+          rulerConfig:
+            storage:
+              type: local
+
+        # MinIO — развёртывается тем же чартом
         minio:
           enabled: true
           rootUser: loki
           rootPassword: supersecret
+          buckets:
+            - name: loki-chunks
+              policy: none
+              purge: false
+            - name: loki-ruler
+              policy: none
+              purge: false
+            - name: loki-admin
+              policy: none
+              purge: false
           persistence:
             enabled: true
             size: 20Gi
-            # Если нет StorageClass, используем local-path
-            storageClass: "local-path"
           resources:
             requests:
               memory: 256Mi
               cpu: 100m
-            limits:
-              memory: 512Mi
-              cpu: 200m
-        
-        # ==========================================
-        # 4. ОТКЛЮЧАЕМ НЕНУЖНОЕ (экономия ресурсов)
-        # ==========================================
+
+        write:
+          replicas: 2
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+
+        read:
+          replicas: 2
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+
+        backend:
+          replicas: 1
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+
+        gateway:
+          enabled: true
+          replicas: 1
+
+        # Отключаем компоненты single-binary (не нужны в SimpleScalable)
+        singleBinary:
+          replicas: 0
+
+        # Отключаем self-monitoring чтобы не было зависимости от Prometheus/Grafana при первом деплое
         monitoring:
           selfMonitoring:
             enabled: false
+            grafanaAgent:
+              installOperator: false
           lokiCanary:
             enabled: false
-        
-        resultsCache:
-          enabled: false
-        
-        chunksCache:
-          enabled: false
 
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
-
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
-
