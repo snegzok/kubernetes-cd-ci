@@ -31,10 +31,19 @@ resources:
     memory: 512Mi
 
 # 7. Защита (Grafana работает от пользователя 472)
+initChownData:
+  enabled: true
+
 securityContext:
-  runAsUser: 472
+  # Настройки уровня Пода (права на тома)
   fsGroup: 472
+  runAsGroup: 472
+  runAsUser: 472
+
+containerSecurityContext:
+  # Настройки внутри самого контейнера
   readOnlyRootFilesystem: false
+  runAsNonRoot: true
 # 8. Переменные (чтобы не запрашивал БД, а работал на sqlite в /var/lib/grafana)
 env:
   - name: GF_PATHS_DATA
