@@ -16,18 +16,11 @@ ingress:
   host: grafana.expert-only.ru
 
 # 5. Динамические диски (Grafana НУЖНО писать в эти папки)
-persistence:
-  volumes:
-    - name: grafana-storage
-      emptyDir: {}
-    - name: grafana-logs
-      emptyDir: {}
-  mounts:
-    - name: grafana-storage
-      mountPath: /var/lib/grafana
-    - name: grafana-logs
-      mountPath: /var/log/grafana
-
+persistence:   # постоянное хранилище
+  enabled: true
+  size: 5Gi
+  accessModes:
+    - ReadWriteOnce
 # 6. Лимиты (Grafana тяжелее Nginx)
 resources:
   requests:
@@ -49,6 +42,6 @@ env:
     value: /var/lib/grafana
   - name: GF_PATHS_LOGS
     value: /var/log/grafana
-envFrom:
+envFrom:   #секрет
   - secretRef:
       name: proxy-credentials
