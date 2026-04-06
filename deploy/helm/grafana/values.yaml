@@ -32,7 +32,7 @@ resources:
 
 # 7. Защита (Grafana работает от пользователя 472)
 securityContext:
-  readOnlyRootFilesystem: true
+  readOnlyRootFilesystem: false
   runAsUser: 472
   fsGroup: 472
 
