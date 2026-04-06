@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'repoURL: https://grafana.github.io/helm-charts' # Правильный URL для Loki
+    repoURL: 'https://grafana.github.io/helm-charts' # Правильный URL для Loki
     chart: loki
     targetRevision: 6.6.2
     helm:
