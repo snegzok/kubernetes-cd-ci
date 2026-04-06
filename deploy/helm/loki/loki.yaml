@@ -14,10 +14,8 @@ spec:
         loki:
           deploymentMode: SimpleScalable
           auth_enabled: false
-
           commonConfig:
             replication_factor: 2
-
           schemaConfig:
             configs:
               - from: "2024-01-01"
@@ -27,7 +25,6 @@ spec:
                 index:
                   prefix: loki_index_
                   period: 24h
-
           storage:
             type: s3
             bucketNames:
@@ -35,17 +32,15 @@ spec:
               ruler: loki-ruler
               admin: loki-admin
             s3:
-              endpoint: http://loki-minio.logging.svc.cluster.local:9000
+              endpoint: http://loki-prod-minio.logging.svc.cluster.local:9000
               accessKeyId: loki
               secretAccessKey: supersecret
               s3ForcePathStyle: true
               insecure: true
-
           rulerConfig:
             storage:
               type: local
 
-        # MinIO — развёртывается тем же чартом
         minio:
           enabled: true
           rootUser: loki
@@ -63,6 +58,7 @@ spec:
           persistence:
             enabled: true
             size: 20Gi
+            storageClass: "local-path"
           resources:
             requests:
               memory: 256Mi
@@ -70,6 +66,9 @@ spec:
 
         write:
           replicas: 2
+          persistence:
+            storageClass: "local-path"
+            size: 10Gi
           resources:
             requests:
               memory: 256Mi
@@ -84,6 +83,9 @@ spec:
 
         backend:
           replicas: 1
+          persistence:
+            storageClass: "local-path"
+            size: 10Gi
           resources:
             requests:
               memory: 256Mi
@@ -93,11 +95,9 @@ spec:
           enabled: true
           replicas: 1
 
-        # Отключаем компоненты single-binary (не нужны в SimpleScalable)
         singleBinary:
           replicas: 0
 
-        # Отключаем self-monitoring чтобы не было зависимости от Prometheus/Grafana при первом деплое
         monitoring:
           selfMonitoring:
             enabled: false
