@@ -15,7 +15,18 @@ spec:
           deploymentMode: SimpleScalable
           auth_enabled: false
         
-          # ОБЯЗАТЕЛЬНЫЙ БЛОК - конфигурация хранилища
+          # --- СХЕМА ХРАНИЛИЩА ---
+          schemaConfig:
+            configs:
+              - from: "2024-01-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+        
+          # --- ХРАНИЛИЩЕ (MinIO) ---
           storage:
             type: s3
             bucketNames:
@@ -29,32 +40,40 @@ spec:
               s3ForcePathStyle: true
               insecure: true
         
-          # Минимальная конфигурация для SimpleScalable режима
+          # --- РЕПЛИКИ ДЛЯ ОТКАЗОУСТОЙЧИВОСТИ ---
           ingester:
-            replicas: 1
+            replicas: 2
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/component: ingester
+                    topologyKey: kubernetes.io/hostname
           querier:
-            replicas: 1
+            replicas: 2
           queryFrontend:
             replicas: 1
           distributor:
-            replicas: 1
+            replicas: 2
           compactor:
             replicas: 1
         
-          # Отключаем лишние компоненты
+          # --- ОТКЛЮЧАЕМ КЕШИ (экономия ресурсов) ---
           resultsCache:
             enabled: false
           chunksCache:
             enabled: false
         
-        # Встроенный MinIO для тестов
+        # --- MINIO С PVC ---
         minio:
           enabled: true
           rootUser: loki
           rootPassword: supersecret
           persistence:
             enabled: true
-            size: 10Gi
+            size: 20Gi
+            storageClass: ""  # использует стандартный StorageClass
           resources:
             requests:
               memory: 256Mi
@@ -63,16 +82,23 @@ spec:
               memory: 512Mi
               cpu: 200m
         
-        # Настройка мониторинга
+        # --- МОНИТОРИНГ (можно включить, если есть ресурсы) ---
         monitoring:
           selfMonitoring:
             enabled: false
           lokiCanary:
             enabled: false
         
-        # Ресурсы для Loki компонентов
+        # --- РЕСУРСЫ ДЛЯ КОМПОНЕНТОВ LOKI ---
         write:
-          replicas: 1
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/component: write
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               memory: 512Mi
@@ -82,7 +108,14 @@ spec:
               cpu: 500m
         
         read:
-          replicas: 1
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/component: read
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               memory: 512Mi
@@ -100,11 +133,11 @@ spec:
             limits:
               memory: 1Gi
               cpu: 500m
-  
+
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
-  
+
   syncPolicy:
     automated:
       prune: true
