@@ -32,16 +32,13 @@ resources:
 
 # 7. Защита (Grafana работает от пользователя 472)
 securityContext:
-  readOnlyRootFilesystem: false
   runAsUser: 472
   fsGroup: 472
-
+  readOnlyRootFilesystem: false
 # 8. Переменные (чтобы не запрашивал БД, а работал на sqlite в /var/lib/grafana)
 env:
-  - name: GF_PATHS_DATA
-    value: /var/lib/grafana
-  - name: GF_PATHS_LOGS
-    value: /var/log/grafana
+  GF_PATHS_DATA: /var/lib/grafana
+  GF_PATHS_LOGS: /var/log/grafana
 envFrom:   #секрет
   - secretRef:
       name: proxy-credentials
