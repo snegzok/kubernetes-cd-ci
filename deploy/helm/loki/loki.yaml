@@ -14,29 +14,101 @@ spec:
         loki:
           deploymentMode: SimpleScalable
           auth_enabled: false
-          # Эти поля ОБЯЗАТЕЛЬНЫ для версии 6.x
+        
+          # ОБЯЗАТЕЛЬНЫЙ БЛОК - конфигурация хранилища
           storage:
+            type: s3
             bucketNames:
               chunks: loki-chunks
               ruler: loki-ruler
               admin: loki-admin
-            type: s3
             s3:
               endpoint: loki-minio.logging.svc:9000
               accessKeyId: loki
               secretAccessKey: supersecret
               s3ForcePathStyle: true
               insecure: true
-
-        # Включаем встроенное хранилище для виртуалки
+        
+          # Минимальная конфигурация для SimpleScalable режима
+          ingester:
+            replicas: 1
+          querier:
+            replicas: 1
+          queryFrontend:
+            replicas: 1
+          distributor:
+            replicas: 1
+          compactor:
+            replicas: 1
+        
+          # Отключаем лишние компоненты
+          resultsCache:
+            enabled: false
+          chunksCache:
+            enabled: false
+        
+        # Встроенный MinIO для тестов
         minio:
           enabled: true
+          rootUser: loki
+          rootPassword: supersecret
+          persistence:
+            enabled: true
+            size: 10Gi
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 200m
+        
+        # Настройка мониторинга
+        monitoring:
+          selfMonitoring:
+            enabled: false
+          lokiCanary:
+            enabled: false
+        
+        # Ресурсы для Loki компонентов
+        write:
+          replicas: 1
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+        
+        read:
+          replicas: 1
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+        
+        backend:
+          replicas: 1
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+  
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
+  
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
