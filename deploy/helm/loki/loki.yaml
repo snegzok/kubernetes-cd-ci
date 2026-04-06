@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.io' # Правильный URL для Loki
+    repoURL: 'repoURL: https://grafana.github.io/helm-charts' # Правильный URL для Loki
     chart: loki
     targetRevision: 6.6.2
     helm:
@@ -15,7 +15,7 @@ spec:
           deploymentMode: SimpleScalable
         # Сюда добавишь настройки для своих виртуалок (S3/MinIO)
   destination:
-    server: https://default.svc
+    server: https://kubernetes.default.svc
     namespace: logging # В какой namespace ставить Loki
   syncPolicy:
     automated:
