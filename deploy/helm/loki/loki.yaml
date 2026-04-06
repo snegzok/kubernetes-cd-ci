@@ -11,12 +11,16 @@ spec:
     targetRevision: 6.6.2
     helm:
       values: |
+        # ==========================================
+        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ
+        # ==========================================
         loki:
           deploymentMode: SimpleScalable
           auth_enabled: false
           
-          # КОНФИГ LOKI КАК МНОГОСТРОЧНАЯ СТРОКА
+          # КОНФИГУРАЦИЯ LOKI (ОБЯЗАТЕЛЬНО КАК СТРОКА!)
           config: |
+            # Схема хранения (обязательно!)
             schema_config:
               configs:
                 - from: "2024-01-01"
@@ -26,6 +30,8 @@ spec:
                   index:
                     prefix: loki_index_
                     period: 24h
+            
+            # Подключение к MinIO
             storage_config:
               s3:
                 endpoint: loki-minio.logging.svc:9000
@@ -33,34 +39,33 @@ spec:
                 secret_access_key: supersecret
                 s3forcepathstyle: true
                 insecure: true
+            
+            # Настройки ingester
             ingester:
               chunk_idle_period: 15m
               chunk_retain_period: 30s
+            
+            # Настройки querier
             querier:
               query_timeout: 60s
+            
+            # Лимиты
+            limits_config:
+              allow_structured_metadata: true
+              volume_enabled: true
+          
+          # Хранилище (бакеты для MinIO)
+          storage:
+            type: s3
+            bucketNames:
+              chunks: loki-chunks
+              ruler: loki-ruler
+              admin: loki-admin
         
-        # HELM ПАРАМЕТРЫ (реплики, ресурсы)
-        ingester:
-          replicas: 2
-        querier:
-          replicas: 2
-        queryFrontend:
-          replicas: 1
-        distributor:
-          replicas: 2
-        compactor:
-          replicas: 1
-        
-        # MINIO
-        minio:
-          enabled: true
-          rootUser: loki
-          rootPassword: supersecret
-          persistence:
-            enabled: true
-            size: 20Gi
-        
-        # РЕСУРСЫ
+        # ==========================================
+        # 2. КОМПОНЕНТЫ (реплики и ресурсы)
+        # ==========================================
+        # Компонент записи
         write:
           replicas: 2
           resources:
@@ -70,7 +75,15 @@ spec:
             limits:
               memory: 1Gi
               cpu: 500m
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/component: write
+                  topologyKey: kubernetes.io/hostname
         
+        # Компонент чтения
         read:
           replicas: 2
           resources:
@@ -80,7 +93,15 @@ spec:
             limits:
               memory: 1Gi
               cpu: 500m
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/component: read
+                  topologyKey: kubernetes.io/hostname
         
+        # Компонент бэкенд (compactor, index gateway)
         backend:
           replicas: 1
           resources:
@@ -91,11 +112,40 @@ spec:
               memory: 1Gi
               cpu: 500m
         
+        # ==========================================
+        # 3. MINIO (встроенное хранилище)
+        # ==========================================
+        minio:
+          enabled: true
+          rootUser: loki
+          rootPassword: supersecret
+          persistence:
+            enabled: true
+            size: 20Gi
+            # Если нет StorageClass, используем local-path
+            storageClass: "local-path"
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 200m
+        
+        # ==========================================
+        # 4. ОТКЛЮЧАЕМ НЕНУЖНОЕ (экономия ресурсов)
+        # ==========================================
         monitoring:
           selfMonitoring:
             enabled: false
           lokiCanary:
             enabled: false
+        
+        resultsCache:
+          enabled: false
+        
+        chunksCache:
+          enabled: false
 
   destination:
     server: https://kubernetes.default.svc
@@ -108,3 +158,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+
