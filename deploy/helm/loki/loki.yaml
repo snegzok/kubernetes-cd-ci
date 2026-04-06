@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.io' # Правильный URL для Loki
+    chart: loki
+    targetRevision: 6.6.2
+    helm:
+      values: |
+        loki:
+          deploymentMode: SimpleScalable
+        # Сюда добавишь настройки для своих виртуалок (S3/MinIO)
+  destination:
+    server: https://default.svc
+    namespace: logging # В какой namespace ставить Loki
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
