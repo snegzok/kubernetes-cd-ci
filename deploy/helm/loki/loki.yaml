@@ -6,17 +6,34 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://grafana.github.io/helm-charts' # Правильный URL для Loki
+    repoURL: 'https://grafana.github.io/helm-charts'
     chart: loki
     targetRevision: 6.6.2
     helm:
       values: |
         loki:
           deploymentMode: SimpleScalable
-        # Сюда добавишь настройки для своих виртуалок (S3/MinIO)
+          auth_enabled: false
+          # Эти поля ОБЯЗАТЕЛЬНЫ для версии 6.x
+          storage:
+            bucketNames:
+              chunks: loki-chunks
+              ruler: loki-ruler
+              admin: loki-admin
+            type: s3
+            s3:
+              endpoint: loki-minio.logging.svc:9000
+              accessKeyId: loki
+              secretAccessKey: supersecret
+              s3ForcePathStyle: true
+              insecure: true
+
+        # Включаем встроенное хранилище для виртуалки
+        minio:
+          enabled: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: logging # В какой namespace ставить Loki
+    namespace: logging
   syncPolicy:
     automated:
       prune: true
