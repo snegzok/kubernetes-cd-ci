@@ -14,58 +14,57 @@ spec:
         loki:
           deploymentMode: SimpleScalable
           auth_enabled: false
-        
-          # --- СХЕМА ХРАНИЛИЩА ---
-          schemaConfig:
-            configs:
-              - from: "2024-01-01"
-                store: tsdb
-                object_store: s3
-                schema: v13
-                index:
-                  prefix: loki_index_
-                  period: 24h
-        
-          # --- ХРАНИЛИЩЕ (MinIO) ---
-          storage:
-            type: s3
-            bucketNames:
-              chunks: loki-chunks
-              ruler: loki-ruler
-              admin: loki-admin
-            s3:
-              endpoint: loki-minio.logging.svc:9000
-              accessKeyId: loki
-              secretAccessKey: supersecret
-              s3ForcePathStyle: true
-              insecure: true
-        
-          # --- РЕПЛИКИ ДЛЯ ОТКАЗОУСТОЙЧИВОСТИ ---
-          ingester:
+          
+          # --- ВНУТРЕННЯЯ КОНФИГУРАЦИЯ LOKI ---
+          config:
+            schema_config:
+              configs:
+                - from: "2024-01-01"
+                  store: tsdb
+                  object_store: s3
+                  schema: v13
+                  index:
+                    prefix: loki_index_
+                    period: 24h
+            storage_config:
+              s3:
+                # Имя сервиса формируется как {metadata.name}-minio
+                endpoint: loki-prod-minio.logging.svc:9000
+                access_key_id: loki
+                secret_access_key: supersecret
+                s3forcepathstyle: true
+                insecure: true
+
+          # --- МАСШТАБИРОВАНИЕ КОМПОНЕНТОВ (ВНУТРИ LOKI) ---
+          write:
             replicas: 2
-            affinity:
-              podAntiAffinity:
-                requiredDuringSchedulingIgnoredDuringExecution:
-                  - labelSelector:
-                      matchLabels:
-                        app.kubernetes.io/component: ingester
-                    topologyKey: kubernetes.io/hostname
-          querier:
+            resources:
+              requests:
+                memory: 512Mi
+                cpu: 200m
+              limits:
+                memory: 1Gi
+                cpu: 500m
+          read:
             replicas: 2
-          queryFrontend:
+            resources:
+              requests:
+                memory: 512Mi
+                cpu: 200m
+              limits:
+                memory: 1Gi
+                cpu: 500m
+          backend:
             replicas: 1
-          distributor:
-            replicas: 2
-          compactor:
-            replicas: 1
-        
-          # --- ОТКЛЮЧАЕМ КЕШИ (экономия ресурсов) ---
-          resultsCache:
-            enabled: false
-          chunksCache:
-            enabled: false
-        
-        # --- MINIO С PVC ---
+            resources:
+              requests:
+                memory: 512Mi
+                cpu: 200m
+              limits:
+                memory: 1Gi
+                cpu: 500m
+
+        # --- ВНЕШНИЙ БЛОК MINIO ---
         minio:
           enabled: true
           rootUser: loki
@@ -73,66 +72,14 @@ spec:
           persistence:
             enabled: true
             size: 20Gi
-            storageClass: ""  # использует стандартный StorageClass
-          resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
-            limits:
-              memory: 512Mi
-              cpu: 200m
-        
-        # --- МОНИТОРИНГ (можно включить, если есть ресурсы) ---
+            storageClass: "" 
+
+        # --- МОНИТОРИНГ ---
         monitoring:
           selfMonitoring:
             enabled: false
           lokiCanary:
             enabled: false
-        
-        # --- РЕСУРСЫ ДЛЯ КОМПОНЕНТОВ LOKI ---
-        write:
-          replicas: 2
-          affinity:
-            podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/component: write
-                  topologyKey: kubernetes.io/hostname
-          resources:
-            requests:
-              memory: 512Mi
-              cpu: 200m
-            limits:
-              memory: 1Gi
-              cpu: 500m
-        
-        read:
-          replicas: 2
-          affinity:
-            podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/component: read
-                  topologyKey: kubernetes.io/hostname
-          resources:
-            requests:
-              memory: 512Mi
-              cpu: 200m
-            limits:
-              memory: 1Gi
-              cpu: 500m
-        
-        backend:
-          replicas: 1
-          resources:
-            requests:
-              memory: 512Mi
-              cpu: 200m
-            limits:
-              memory: 1Gi
-              cpu: 500m
 
   destination:
     server: https://kubernetes.default.svc
