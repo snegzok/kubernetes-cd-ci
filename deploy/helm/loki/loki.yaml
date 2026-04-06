@@ -15,8 +15,8 @@ spec:
           deploymentMode: SimpleScalable
           auth_enabled: false
           
-          # --- ВНУТРЕННЯЯ КОНФИГУРАЦИЯ LOKI ---
-          config:
+          # КОНФИГ LOKI КАК МНОГОСТРОЧНАЯ СТРОКА
+          config: |
             schema_config:
               configs:
                 - from: "2024-01-01"
@@ -28,43 +28,30 @@ spec:
                     period: 24h
             storage_config:
               s3:
-                # Имя сервиса формируется как {metadata.name}-minio
-                endpoint: loki-prod-minio.logging.svc:9000
+                endpoint: loki-minio.logging.svc:9000
                 access_key_id: loki
                 secret_access_key: supersecret
                 s3forcepathstyle: true
                 insecure: true
-
-          # --- МАСШТАБИРОВАНИЕ КОМПОНЕНТОВ (ВНУТРИ LOKI) ---
-          write:
-            replicas: 2
-            resources:
-              requests:
-                memory: 512Mi
-                cpu: 200m
-              limits:
-                memory: 1Gi
-                cpu: 500m
-          read:
-            replicas: 2
-            resources:
-              requests:
-                memory: 512Mi
-                cpu: 200m
-              limits:
-                memory: 1Gi
-                cpu: 500m
-          backend:
-            replicas: 1
-            resources:
-              requests:
-                memory: 512Mi
-                cpu: 200m
-              limits:
-                memory: 1Gi
-                cpu: 500m
-
-        # --- ВНЕШНИЙ БЛОК MINIO ---
+            ingester:
+              chunk_idle_period: 15m
+              chunk_retain_period: 30s
+            querier:
+              query_timeout: 60s
+        
+        # HELM ПАРАМЕТРЫ (реплики, ресурсы)
+        ingester:
+          replicas: 2
+        querier:
+          replicas: 2
+        queryFrontend:
+          replicas: 1
+        distributor:
+          replicas: 2
+        compactor:
+          replicas: 1
+        
+        # MINIO
         minio:
           enabled: true
           rootUser: loki
@@ -72,9 +59,38 @@ spec:
           persistence:
             enabled: true
             size: 20Gi
-            storageClass: "" 
-
-        # --- МОНИТОРИНГ ---
+        
+        # РЕСУРСЫ
+        write:
+          replicas: 2
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+        
+        read:
+          replicas: 2
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+        
+        backend:
+          replicas: 1
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+        
         monitoring:
           selfMonitoring:
             enabled: false
