@@ -15,7 +15,7 @@ spec:
           deploymentMode: SimpleScalable
           auth_enabled: false
           commonConfig:
-            replication_factor: 2
+            replication_factor: 1
           schemaConfig:
             configs:
               - from: "2024-01-01"
@@ -39,7 +39,14 @@ spec:
               insecure: true
           rulerConfig:
             storage:
-              type: local
+              type: s3
+              s3:
+                endpoint: http://loki-prod-minio.logging.svc.cluster.local:9000
+                accessKeyId: loki
+                secretAccessKey: supersecret
+                s3ForcePathStyle: true
+                insecure: true
+                bucketnames: loki-ruler
 
         minio:
           enabled: true
@@ -65,7 +72,7 @@ spec:
               cpu: 100m
 
         write:
-          replicas: 2
+          replicas: 1
           persistence:
             storageClass: "local-path"
             size: 10Gi
@@ -75,7 +82,7 @@ spec:
               cpu: 100m
 
         read:
-          replicas: 2
+          replicas: 1
           resources:
             requests:
               memory: 256Mi
