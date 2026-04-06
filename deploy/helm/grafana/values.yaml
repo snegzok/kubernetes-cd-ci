@@ -37,8 +37,11 @@ securityContext:
   readOnlyRootFilesystem: false
 # 8. Переменные (чтобы не запрашивал БД, а работал на sqlite в /var/lib/grafana)
 env:
-  GF_PATHS_DATA: /var/lib/grafana
-  GF_PATHS_LOGS: /var/log/grafana
+  - name: GF_PATHS_DATA
+    value: /var/lib/grafana
+  - name: GF_PATHS_LOGS
+    value: /var/log/grafana
+
 envFrom:   #секрет
   - secretRef:
       name: proxy-credentials
