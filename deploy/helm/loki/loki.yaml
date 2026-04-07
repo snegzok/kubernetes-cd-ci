@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.io'
+    repoURL: 'https://grafana.github.io/helm-charts'
     chart: loki
     targetRevision: 6.6.2
     helm:
@@ -98,7 +98,7 @@ spec:
             enabled: false
 
   destination:
-    server: https://default.svc
+    server: https://kubernetes.default.svc
     namespace: logging
   syncPolicy:
     automated:
