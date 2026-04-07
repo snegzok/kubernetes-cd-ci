@@ -15,6 +15,18 @@ spec:
           deploymentMode: SimpleScalable
           auth_enabled: false
 
+          # Общие настройки для всех компонентов (самый высокий приоритет)
+          commonConfig:
+            replication_factor: 1
+            storage:
+              s3:
+                endpoint: loki-prod-minio.logging.svc.cluster.local:9000
+                insecure: true
+                s3ForcePathStyle: true
+                existingSecret: loki-minio-secret
+                accessKeyIdKey: rootUser
+                secretAccessKeyKey: rootPassword
+
           schemaConfig:
             configs:
               - from: "2024-01-01"
@@ -25,23 +37,14 @@ spec:
                   prefix: index_
                   period: 24h
 
-          commonConfig:
-            replication_factor: 1
-
           storage:
             type: s3
             bucketNames:
               chunks: chunks
               ruler: ruler
               admin: admin
-            s3:
-              endpoint: loki-prod-minio.logging.svc.cluster.local:9000
-              existingSecret: loki-minio-secret
-              accessKeyIdKey: rootUser
-              secretAccessKeyKey: rootPassword
-              s3ForcePathStyle: true
-              insecure: true
 
+          # Явный проброс переменных, чтобы перебить дефолтные "enterprise-logs"
           write:
             replicas: 1
             extraEnv:
@@ -88,6 +91,7 @@ spec:
               limits:
                 memory: 128Mi
 
+        # Настройки встроенного Minio (если используешь его из чарта)
         minio:
           enabled: true
           mode: standalone
