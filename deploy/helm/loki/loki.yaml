@@ -16,103 +16,69 @@ spec:
           auth_enabled: false
           commonConfig:
             replication_factor: 1
-          schemaConfig:
-            configs:
-              - from: "2024-01-01"
-                store: tsdb
-                object_store: s3
-                schema: v13
-                index:
-                  prefix: loki_index_
-                  period: 24h
           storage:
             type: s3
             bucketNames:
               chunks: loki-chunks
-              ruler: loki-ruler
-              admin: loki-admin
             s3:
-              endpoint: http://loki-prod-minio.logging.svc.cluster.local:9000
+              # Упрощаем адрес до внутреннего
+              endpoint: loki-prod-minio.logging.svc:9000
               accessKeyId: loki
               secretAccessKey: supersecret
               s3ForcePathStyle: true
               insecure: true
-          rulerConfig:
-            storage:
-              type: s3
-              s3:
-                endpoint: http://loki-prod-minio.logging.svc.cluster.local:9000
-                accessKeyId: loki
-                secretAccessKey: supersecret
-                s3ForcePathStyle: true
-                insecure: true
-                bucketnames: loki-ruler
 
+        # --- ЭКОНОМНЫЙ MINIO ---
         minio:
           enabled: true
+          mode: standalone # ОДИН ПОД вместо четырех!
+          replicas: 1
           rootUser: loki
           rootPassword: supersecret
-          buckets:
-            - name: loki-chunks
-              policy: none
-              purge: false
-            - name: loki-ruler
-              policy: none
-              purge: false
-            - name: loki-admin
-              policy: none
-              purge: false
           persistence:
             enabled: true
-            size: 20Gi
+            size: 2Gi # Хватит для тестов
             storageClass: "local-path"
           resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
+            limits:
+              memory: 256Mi # Жесткий потолок по памяти
 
+        # --- ЭКОНОМНЫЙ LOKI (оставляем по 1 реплике) ---
         write:
           replicas: 1
           persistence:
-            storageClass: "local-path"
-            size: 10Gi
+            size: 1Gi # Уменьшаем WAL-диск
           resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
-
+            limits:
+              memory: 512Mi
         read:
           replicas: 1
           resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
-
+            limits:
+              memory: 512Mi
         backend:
           replicas: 1
           persistence:
-            storageClass: "local-path"
-            size: 10Gi
+            size: 1Gi
           resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
+            limits:
+              memory: 512Mi
 
         gateway:
           enabled: true
-          replicas: 1
+          resources:
+            limits:
+              memory: 64Mi
 
-        singleBinary:
-          replicas: 0
-
+        resultsCache:
+          enabled: false
+        chunksCache:
+          enabled: false
         monitoring:
           selfMonitoring:
             enabled: false
-            grafanaAgent:
-              installOperator: false
           lokiCanary:
             enabled: false
-
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
