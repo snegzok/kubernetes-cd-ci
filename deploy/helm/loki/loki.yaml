@@ -35,15 +35,59 @@ spec:
               ruler: ruler
               admin: admin
             s3:
-              # Проверьте, что сервис Minio будет называться именно так
-              endpoint: loki-prod-minio.logging.svc:9000
+              endpoint: loki-prod-minio.logging.svc.cluster.local:9000
               existingSecret: loki-minio-secret
               accessKeyIdKey: rootUser
               secretAccessKeyKey: rootPassword
               s3ForcePathStyle: true
               insecure: true
 
-        # Эти блоки должны быть на одном уровне с "loki:", а не внутри него
+          write:
+            replicas: 1
+            extraEnv:
+              - name: S3_STORAGE_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: loki-minio-secret
+                    key: rootUser
+              - name: S3_STORAGE_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: loki-minio-secret
+                    key: rootPassword
+            resources:
+              limits:
+                memory: 512Mi
+
+          backend:
+            replicas: 1
+            extraEnv:
+              - name: S3_STORAGE_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: loki-minio-secret
+                    key: rootUser
+              - name: S3_STORAGE_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: loki-minio-secret
+                    key: rootPassword
+            resources:
+              limits:
+                memory: 512Mi
+
+          read:
+            replicas: 1
+            resources:
+              limits:
+                memory: 512Mi
+
+          gateway:
+            enabled: true
+            resources:
+              limits:
+                memory: 128Mi
+
         minio:
           enabled: true
           mode: standalone
@@ -55,37 +99,6 @@ spec:
             enabled: true
             size: 5Gi
             storageClass: "local-path"
-          resources:
-            limits:
-              memory: 512Mi
-
-        write:
-          replicas: 1
-          persistence:
-            size: 2Gi
-          resources:
-            limits:
-              memory: 512Mi
-
-        read:
-          replicas: 1
-          resources:
-            limits:
-              memory: 512Mi
-
-        backend:
-          replicas: 1
-          persistence:
-            size: 2Gi
-          resources:
-            limits:
-              memory: 512Mi
-
-        gateway:
-          enabled: true
-          resources:
-            limits:
-              memory: 64Mi
 
         resultsCache:
           enabled: false
@@ -96,6 +109,7 @@ spec:
             enabled: false
           lokiCanary:
             enabled: false
+
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
