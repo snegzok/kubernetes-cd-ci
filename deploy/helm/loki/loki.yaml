@@ -46,9 +46,6 @@ spec:
         # --- ЭКОНОМНЫЙ MINIO ---
         minio:
           enabled: true
-          image:
-            repository: quay.io/minio/minio
-            tag: RELEASE.2024-03-07T09-43-48Z
           mode: standalone
           replicas: 1
           existingSecret: loki-minio-secret
