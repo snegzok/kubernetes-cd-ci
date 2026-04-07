@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://grafana.github.io/helm-charts'
+    repoURL: 'https://github.io'
     chart: loki
     targetRevision: 6.6.2
     helm:
@@ -14,14 +14,28 @@ spec:
         loki:
           deploymentMode: SimpleScalable
           auth_enabled: false
+          
+          # Обязательная настройка схемы хранения для версии 6.x
+          schemaConfig:
+            configs:
+              - from: "2024-01-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
+
           commonConfig:
             replication_factor: 1
+
           storage:
             type: s3
             bucketNames:
               chunks: loki-chunks
+              ruler: loki-ruler
+              admin: loki-admin
             s3:
-              # Упрощаем адрес до внутреннего
               endpoint: loki-prod-minio.logging.svc:9000
               accessKeyId: loki
               secretAccessKey: supersecret
@@ -31,35 +45,37 @@ spec:
         # --- ЭКОНОМНЫЙ MINIO ---
         minio:
           enabled: true
-          mode: standalone # ОДИН ПОД вместо четырех!
+          mode: standalone
           replicas: 1
           rootUser: loki
           rootPassword: supersecret
           persistence:
             enabled: true
-            size: 2Gi # Хватит для тестов
+            size: 5Gi
             storageClass: "local-path"
           resources:
             limits:
-              memory: 256Mi # Жесткий потолок по памяти
+              memory: 256Mi
 
-        # --- ЭКОНОМНЫЙ LOKI (оставляем по 1 реплике) ---
+        # --- КОМПОНЕНТЫ LOKI (по 1 реплике) ---
         write:
           replicas: 1
           persistence:
-            size: 1Gi # Уменьшаем WAL-диск
+            size: 2Gi
           resources:
             limits:
               memory: 512Mi
+        
         read:
           replicas: 1
           resources:
             limits:
               memory: 512Mi
+        
         backend:
           replicas: 1
           persistence:
-            size: 1Gi
+            size: 2Gi
           resources:
             limits:
               memory: 512Mi
@@ -70,6 +86,7 @@ spec:
             limits:
               memory: 64Mi
 
+        # Выключаем кэши для экономии ресурсов
         resultsCache:
           enabled: false
         chunksCache:
@@ -79,8 +96,9 @@ spec:
             enabled: false
           lokiCanary:
             enabled: false
+
   destination:
-    server: https://kubernetes.default.svc
+    server: https://default.svc
     namespace: logging
   syncPolicy:
     automated:
