@@ -38,8 +38,8 @@ spec:
             s3:
               endpoint: loki-prod-minio.logging.svc:9000
               existingSecret: loki-minio-secret
-              accessKeyIdKey: access-key
-              secretAccessKeyKey: secret-key
+#             rootUserKey:
+#             rootPasswordKey:
               s3ForcePathStyle: true
               insecure: true
 
@@ -49,8 +49,8 @@ spec:
           mode: standalone
           replicas: 1
           existingSecret: loki-minio-secret
-          rootUserKey: access-key
-          rootPasswordKey: secret-key
+#         rootUserKey:
+#         rootPasswordKey:
           persistence:
             enabled: true
             size: 5Gi
